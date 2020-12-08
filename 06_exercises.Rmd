@@ -12,7 +12,7 @@ output:
 
 
 ```{r setup, include=FALSE}
-#knitr::opts_chunk$set(echo = TRUE, error=TRUE, message=FALSE, warning=FALSE)
+knitr::opts_chunk$set(echo = TRUE, error=TRUE, message=FALSE, warning=FALSE)
 ```
 
 ```{r libraries}
@@ -81,13 +81,21 @@ Once your repository is created, you should always open your **project** rather 
 
   2. Read in the fake garden harvest data. Find the data [here](https://github.com/llendway/scraping_etc/blob/main/2020_harvest.csv) and click on the `Raw` button to get a direct link to the data.
   
+```{r}
+fake_2020_harvest <- read_csv("https://raw.githubusercontent.com/llendway/scraping_etc/main/2020_harvest.csv",
+    col_types = cols(weight = col_number()),
+    na = "MISSING",
+    skip = 2) %>% 
+  select(-X1)
 
+View(fake_2020_harvest)
+```
 
-  
   3. Read in this [data](https://www.kaggle.com/heeraldedhia/groceries-dataset) from the kaggle website. You will need to download the data first. Save it to your project/repo folder. Do some quick checks of the data to assure it has been read in appropriately.
   
 ```{r}
 Groceries_dataset <- read_csv("Groceries_dataset.csv")
+
 View(Groceries_dataset)
 ```
 
@@ -100,14 +108,66 @@ View(Groceries_dataset)
   5. Create a table using `gt` with data from your project or from the `garden_harvest` data if your project data aren't ready.
   
 ```{r}
-gt_table <- gt(garden_harvest) %>% 
+garden_harvest %>% 
+  group_by(vegetable) %>%
+  mutate(weight_lb = weight*0.0022) %>% 
+  summarise(total_weight_lb = sum(weight_lb)) %>%
+  gt() %>% 
   tab_header(title = "2020 Garden Harvest Data")
-
-gt_table
 ```
 
   
   6. Use `patchwork` operators and functions to combine at least two graphs using your project data or `garden_harvest` data if your project data aren't read.
+  
+```{r}
+g1 <- garden_harvest %>%
+  filter(vegetable %in% c("cucumbers", "beans", "zucchini"), date < mdy("10/1/2020")) %>%
+  select(vegetable, weight, date) %>%
+  group_by(vegetable, date) %>%
+  mutate(weight_lb = weight*0.0022) %>% 
+  summarise(total_weight = sum(weight_lb)) %>% 
+  ggplot(aes(x = date, y = total_weight, color = vegetable, shape = vegetable))+
+  geom_point()+
+  geom_line()+
+  labs(title = "Daily Growth in Weight (lb) 
+       of Vegetables",
+       x = "",
+       y = "",
+       color = "",
+       shape = "")+
+  scale_y_continuous(n.breaks = 10)+
+  scale_colour_viridis_d()+
+  theme_minimal()+
+  theme(legend.position="top",
+        panel.grid.minor.x = element_blank(),
+        panel.grid.major.x = element_blank())
+
+g2 <- garden_harvest %>%
+  filter(vegetable %in% c("lettuce", "spinach", "kale"), date < mdy("10/1/2020")) %>%
+  select(vegetable, weight, date) %>%
+  group_by(vegetable, date) %>%
+  mutate(weight_lb = weight*0.0022) %>% 
+  summarise(total_weight = sum(weight_lb)) %>% 
+  ggplot(aes(x = date, y = total_weight, color = vegetable, shape = vegetable))+
+  geom_point()+
+  geom_line()+
+  labs(title = "Daily Growth in Weight (lb)
+  of Vegetables",
+       x = "",
+       y = "",
+       color = "",
+       shape = "")+
+  scale_y_continuous(n.breaks = 10)+
+  scale_colour_viridis_d()+
+  theme_minimal()+
+  theme(legend.position="top",
+        panel.grid.minor.x = element_blank(),
+        panel.grid.major.x = element_blank())
+
+g1 | g2 + 
+  plot_annotation(title = "Daily Growth of Different Vegetables") 
+```
+
   
 
 **DID YOU REMEMBER TO UNCOMMENT THE OPTIONS AT THE TOP?**
